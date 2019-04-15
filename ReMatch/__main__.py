@@ -42,7 +42,7 @@ def download_twitch(id, outfile):
             ydl.download([vodinf.get('url')])
 
 
-tba_apikey = 'iqlDLS4Ak2oiu6sPybhUgjG12aR9xciBAw2lV79ZwWa3Gyh7BckpoVtj0dwCA2eL'
+tba_apikey = '<TLC Needed>'
 # https://github.com/PlasmaRobotics2403/TBApi -- in use
 # https://github.com/frc1418/tbapy            -- might be better, more recent
 tba_client = tbapi.TBAParser(tba_apikey, cache=False)
@@ -84,18 +84,17 @@ def split_match(match, outdir):
     # we might need to have duration be longer
     command = [
         'ffmpeg',
-        '-hide_banner',
-        '-loglevel warning',    # https://superuser.com/a/438280
-        '-y',                   # overwrite existing files
-        '-ss {start_offset}',
-        '-i {infile}',
-        '-t {duration}',
-        # '-c copy',
-        '-threads 3',
-        '-c:v copy -c:a copy',
-        '-bsf:a aac_adtstoasc',
-        '-flags +global_header',
-        '{outdir}/{match_key}.mp4',
+        '-hide_banner',             # Hide the banner
+        '-loglevel warning',        # quiet! https://superuser.com/a/438280
+        '-y',                       # overwrite existing files
+        '-ss {start_offset}',       # Fast Seek (before -i)
+        '-i {infile}',              # Input file
+        '-t {duration}',            # Duration
+        '-threads 3',               # Shouldn't matter
+        '-c:v copy -c:a copy',      # Don't re-encode... Let youtube do that
+        '-bsf:a aac_adtstoasc',     # Fix weird warning about audio
+        '-flags +global_header',    # Fix issue about global header
+        '{outdir}/{match_key}.mp4', # Output file
     ]
     command = " ".join(command)
     match['outdir'] = outdir
@@ -109,10 +108,12 @@ if __name__ == '__main__':
     event_key = '2019marea'
     event_name = 'NE District North Shore Event'
     year = '2019'
+    outdir = 'outdir'
     sec_after = 5
     sec_before = 3 * 60  # FIRST rules say results must be posted within 2 mins
                          # post_result_time is not accurate in TBA or FRC
 
+    # Put a list of video IDs here
     videoids = [
         # '399875098', # Junk
         # '399510649', # Junk
@@ -148,6 +149,7 @@ if __name__ == '__main__':
             match['actual_time'] = match['actual_time'] + libtime.altzone
             match['post_result_time'] = match['post_result_time'] + \
                 libtime.altzone
+
         # Find which video contains the match
         is_video_found = False
         for video in videos:
@@ -176,19 +178,8 @@ if __name__ == '__main__':
         if not is_video_found:
             print('WARN unable to find video for match {}'.format(match.key))
 
-    # mkdir -p outdir
-    outdir = 'outdir'
     os.makedirs(outdir, exist_ok=True)
 
     for match in to_split:
         split_match(match, outdir)
-        # match.post_result_time
-        # match.predicted_time    # TBA prediction?
-        # match.time            # Scheduled time
-
-    #     print(match)
-    #     import code
-    #     code.interact(local=locals())
-    #     # help(tbapi.Event_Match)
-    #     break
-        # actual_time
+        # @todo upload to youtube in background
